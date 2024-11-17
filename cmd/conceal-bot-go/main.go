@@ -99,12 +99,33 @@ func main() {
 }
 
 func handleConvertTime(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	const timeFormat = "15:04"
+	const (
+		timeFormat24     = "15:04"
+		timeFormat12     = "03:04PM"
+		timeFormatOutput = "03:04 PM"
+	)
 
 	timeStr := i.ApplicationCommandData().Options[0].StringValue()
-	parsedTime, err := time.Parse(timeFormat, timeStr)
-	if err != nil {
-		replyWithMessage(s, i, "Invalid time format. Please use HH:MM. (24-hour format)")
+	timeStr = strings.ToUpper(timeStr)
+	timeStr = strings.ReplaceAll(timeStr, " ", "")
+
+	var (
+		parsedTime    time.Time
+		parsedTimeErr error
+	)
+
+	if strings.Contains(timeStr, "PM") || strings.Contains(timeStr, "AM") {
+		parsedTime, parsedTimeErr = time.Parse(timeFormat12, timeStr)
+	} else {
+		parsedTime, parsedTimeErr = time.Parse(timeFormat24, timeStr)
+	}
+
+	if parsedTimeErr != nil {
+		replyWithMessage(
+			s,
+			i,
+			"Invalid time format. Please use one of the following formats: HH:MM (24-hour), HH:MM AM (HH:MM am), or HH:MM PM (HH:MM pm).",
+		)
 		return
 	}
 
@@ -123,7 +144,7 @@ func handleConvertTime(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		now := time.Now()
 		timeInLocation := time.Date(now.Year(), now.Month(), now.Day(), parsedTime.Hour(), parsedTime.Minute(), 0, 0, loc)
-		results = append(results, fmt.Sprintf("If %s is the time in %s, then:", timeStr, locationName))
+		results = append(results, fmt.Sprintf("If %s is the time in %s, then:", parsedTime.Format(timeFormatOutput), locationName))
 
 		for targetName, targetTimezone := range timezonesMap {
 			if targetName == locationName {
@@ -135,7 +156,13 @@ func handleConvertTime(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				continue
 			}
 			targetTime := timeInLocation.In(targetLoc)
-			results = append(results, fmt.Sprintf("- %s would be the time in %s", targetTime.Format(timeFormat), targetName))
+			results = append(results,
+				fmt.Sprintf(
+					"- %s would be the time in %s",
+					targetTime.Format(timeFormatOutput),
+					targetName,
+				),
+			)
 		}
 		results = append(results, "")
 	}
@@ -143,7 +170,7 @@ func handleConvertTime(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func onReady(s *discordgo.Session, event *discordgo.Ready) {
-	if err := s.UpdateGameStatus(0, "Concealing lol"); err != nil {
+	if err := s.UpdateGameStatus(0, "Concealing lmao"); err != nil {
 		log.Printf("Error updating game status at ready: %v", err)
 	}
 	log.Printf("Ready! Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
