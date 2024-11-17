@@ -120,7 +120,8 @@ func handleConvertTime(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			continue
 		}
 
-		timeInLocation := time.Date(0, 1, 1, parsedTime.Hour(), parsedTime.Minute(), 0, 0, loc)
+		now := time.Now()
+		timeInLocation := time.Date(now.Year(), now.Month(), now.Day(), parsedTime.Hour(), parsedTime.Minute(), 0, 0, loc)
 		results = append(results, fmt.Sprintf("If %s is the time in %s, then:", timeStr, locationName))
 
 		for targetName, targetTimezone := range timezonesMap {
