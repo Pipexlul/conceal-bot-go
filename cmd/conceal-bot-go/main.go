@@ -16,7 +16,7 @@ import (
 	"github.com/pipexlul/conceal-bot-go/internal/pkg/env"
 )
 
-const funnyStatus = "Targetting in deathmatch"
+const funnyStatus = "Middle name?!?!"
 
 var mongoClient *mongo.Client
 
