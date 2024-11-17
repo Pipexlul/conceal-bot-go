@@ -2,16 +2,21 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
+	_ "time/tzdata"
 
 	"github.com/bwmarrin/discordgo"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/pipexlul/conceal-bot-go/internal/commands"
+	"github.com/pipexlul/conceal-bot-go/internal/mappers"
+	"github.com/pipexlul/conceal-bot-go/internal/pkg/env"
 )
+
+const funnyStatus = "Middle name?!?!"
 
 var mongoClient *mongo.Client
 
@@ -46,21 +51,17 @@ func disconnectMongo() {
 }
 
 func main() {
-	botToken := os.Getenv("BOT_TOKEN")
-	if botToken == "" {
-		log.Fatal("Missing BOT_TOKEN environment variable")
+	botToken := env.GetBotToken()
+	if botToken.Token == "" {
+		log.Fatal("Missing all BOT TOKEN environment variables, at least one is required")
 	}
 
-	dg, err := discordgo.New("Bot " + botToken)
+	log.Printf("Starting bot in %s mode", mappers.MapTokenTypeToString(botToken.TokenType))
+
+	dg, err := discordgo.New("Bot " + botToken.Token)
 	if err != nil {
 		log.Fatalf("Failed to create Discord session: %v", err)
 	}
-
-	dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if i.Type == discordgo.InteractionApplicationCommand && i.ApplicationCommandData().Name == "cctime" {
-			handleConvertTime(s, i)
-		}
-	})
 
 	dg.AddHandler(onReady)
 
@@ -77,84 +78,25 @@ func main() {
 		log.Println("Discord session closed")
 	}()
 
-	_, err = dg.ApplicationCommandCreate(dg.State.User.ID, "", &discordgo.ApplicationCommand{
-		Name:        "cctime",
-		Description: "Convert time between New Jersey/Philadelphia and Chile",
-		Options: []*discordgo.ApplicationCommandOption{
-			{
-				Type:        discordgo.ApplicationCommandOptionString,
-				Name:        "time",
-				Description: "Time to convert",
-				Required:    true,
-			},
-		},
-	})
-	if err != nil {
-		log.Fatalf("Failed to create command: %v", err)
+	registererCtx, cancelFunc := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelFunc()
+
+	// TODO: Use a more centralized command registerer
+	cmd := &commands.TimeDifferenceCmd{}
+	registerCmdErr := cmd.Register(registererCtx, dg)
+	if registerCmdErr != nil {
+		log.Fatalf("Failed to register command: %v", cmd.GetCommandName())
 	}
+
+	log.Print("All commands registered!")
 
 	log.Println("Bot is now running. Press CTRL-C to exit.")
 	select {}
 }
 
-func handleConvertTime(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	const timeFormat = "15:04"
-
-	timeStr := i.ApplicationCommandData().Options[0].StringValue()
-	parsedTime, err := time.Parse(timeFormat, timeStr)
-	if err != nil {
-		replyWithMessage(s, i, "Invalid time format. Please use HH:MM. (24-hour format)")
-		return
-	}
-
-	timezonesMap := map[string]string{
-		"New Jersey/Philadelphia": "America/New_York",
-		"Chile":                   "America/Santiago",
-	}
-
-	var results []string
-	for locationName, timezone := range timezonesMap {
-		loc, err := time.LoadLocation(timezone)
-		if err != nil {
-			log.Printf("Error loading location %s: %v", timezone, err)
-			continue
-		}
-
-		timeInLocation := time.Date(0, 1, 1, parsedTime.Hour(), parsedTime.Minute(), 0, 0, loc)
-		results = append(results, fmt.Sprintf("If %s is the time in %s, then:", timeStr, locationName))
-
-		for targetName, targetTimezone := range timezonesMap {
-			if targetName == locationName {
-				continue
-			}
-			targetLoc, err := time.LoadLocation(targetTimezone)
-			if err != nil {
-				log.Printf("Error loading location %s: %v", targetTimezone, err)
-				continue
-			}
-			targetTime := timeInLocation.In(targetLoc)
-			results = append(results, fmt.Sprintf("- %s would be the time in %s", targetTime.Format(timeFormat), targetName))
-		}
-		results = append(results, "")
-	}
-	replyWithMessage(s, i, strings.Join(results, "\n"))
-}
-
 func onReady(s *discordgo.Session, event *discordgo.Ready) {
-	if err := s.UpdateGameStatus(0, "Concealing lol"); err != nil {
+	if err := s.UpdateGameStatus(0, funnyStatus); err != nil {
 		log.Printf("Error updating game status at ready: %v", err)
 	}
 	log.Printf("Ready! Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
-}
-
-func replyWithMessage(s *discordgo.Session, i *discordgo.InteractionCreate, message string) {
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: message,
-		},
-	})
-	if err != nil {
-		log.Printf("Error sending response: %v", err)
-	}
 }

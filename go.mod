@@ -1,6 +1,8 @@
 module github.com/pipexlul/conceal-bot-go
 
-go 1.23.1
+go 1.23
+
+toolchain go1.23.2
 
 require (
 	github.com/bwmarrin/discordgo v0.28.1
