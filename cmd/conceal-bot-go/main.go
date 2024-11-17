@@ -13,9 +13,12 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/pipexlul/conceal-bot-go/internal/mappers"
+	"github.com/pipexlul/conceal-bot-go/internal/pkg/env"
 )
 
-const funnyStatus = "Le epic concealing"
+const funnyStatus = "Targetting in deathmatch"
 
 var mongoClient *mongo.Client
 
@@ -50,12 +53,14 @@ func disconnectMongo() {
 }
 
 func main() {
-	botToken := os.Getenv("BOT_TOKEN")
-	if botToken == "" {
-		log.Fatal("Missing BOT_TOKEN environment variable")
+	botToken := env.GetBotToken()
+	if botToken.Token == "" {
+		log.Fatal("Missing all BOT TOKEN environment variables, at least one is required")
 	}
 
-	dg, err := discordgo.New("Bot " + botToken)
+	log.Printf("Starting bot in %s mode", mappers.MapTokenTypeToString(botToken.TokenType))
+
+	dg, err := discordgo.New("Bot " + botToken.Token)
 	if err != nil {
 		log.Fatalf("Failed to create Discord session: %v", err)
 	}
