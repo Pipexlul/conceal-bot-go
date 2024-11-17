@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 	_ "time/tzdata"
@@ -13,6 +14,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+const funnyStatus = "Le epic concealing"
 
 var mongoClient *mongo.Client
 
@@ -107,6 +110,13 @@ func handleConvertTime(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	timeStr := i.ApplicationCommandData().Options[0].StringValue()
 	timeStr = strings.ToUpper(timeStr)
+
+	// Regex validations to add leading zeroes when necessary
+	re := regexp.MustCompile(`^(\d):`)
+	timeStr = re.ReplaceAllString(timeStr, "0$1:")
+	re = regexp.MustCompile(`:(\d)(?:\s|AM|PM|$)`)
+	timeStr = re.ReplaceAllString(timeStr, ":0$1")
+
 	timeStr = strings.ReplaceAll(timeStr, " ", "")
 
 	var (
@@ -170,7 +180,7 @@ func handleConvertTime(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func onReady(s *discordgo.Session, event *discordgo.Ready) {
-	if err := s.UpdateGameStatus(0, "Concealing lmao"); err != nil {
+	if err := s.UpdateGameStatus(0, funnyStatus); err != nil {
 		log.Printf("Error updating game status at ready: %v", err)
 	}
 	log.Printf("Ready! Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
