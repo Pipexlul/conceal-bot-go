@@ -4,11 +4,21 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"maps"
 	"regexp"
+	"slices"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+)
+
+var (
+	timezonesMap = map[string]string{
+		"New Jersey/Philadelphia": "America/New_York",
+		"Chile":                   "America/Santiago",
+	}
 )
 
 type TimeDifferenceCmd struct {
@@ -18,16 +28,42 @@ func (cmd *TimeDifferenceCmd) GetCommandName() string {
 	return "timediff"
 }
 
+func (cmd *TimeDifferenceCmd) GetLocationChoices() []*discordgo.ApplicationCommandOptionChoice {
+	choices := make([]*discordgo.ApplicationCommandOptionChoice, 0, len(timezonesMap))
+
+	locationNames := slices.Collect(maps.Keys(timezonesMap))
+	sort.Strings(locationNames)
+
+	for _, locName := range locationNames {
+		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+			Name:  locName,
+			Value: locName,
+		})
+	}
+
+	return choices
+}
+
 func (cmd *TimeDifferenceCmd) GetOptions() []*discordgo.ApplicationCommandOption {
 	return []*discordgo.ApplicationCommandOption{
 		{
 			Type:        discordgo.ApplicationCommandOptionString,
-			Name:        "time",
-			Description: "Base time from where you want to convert to other timezones",
+			Name:        "location",
+			Description: "Location from where you want to convert to other timezones",
 			ChannelTypes: []discordgo.ChannelType{
 				discordgo.ChannelTypeGuildText,
 			},
 			Required: true,
+			Choices:  cmd.GetLocationChoices(),
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionString,
+			Name:        "time",
+			Description: "Base time from where you want to convert to other timezones, if not passed, uses current time",
+			ChannelTypes: []discordgo.ChannelType{
+				discordgo.ChannelTypeGuildText,
+			},
+			Required: false,
 		},
 	}
 }
@@ -62,6 +98,21 @@ func (cmd *TimeDifferenceCmd) Register(
 	return nil
 }
 
+func (cmd *TimeDifferenceCmd) GetUserParams(
+	interactionData []*discordgo.ApplicationCommandInteractionDataOption,
+) (locationParam string, timeParam string) {
+	for _, param := range interactionData {
+		switch param.Name {
+		case "location":
+			locationParam = param.StringValue()
+		case "time":
+			timeParam = param.StringValue()
+		}
+	}
+
+	return
+}
+
 func (cmd *TimeDifferenceCmd) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	const (
 		timeFormat24     = "15:04"
@@ -69,7 +120,22 @@ func (cmd *TimeDifferenceCmd) Execute(s *discordgo.Session, i *discordgo.Interac
 		timeFormatOutput = "03:04 PM"
 	)
 
-	timeStr := i.ApplicationCommandData().Options[0].StringValue()
+	location, timeStr := cmd.GetUserParams(i.ApplicationCommandData().Options)
+	timezone, foundTZ := timezonesMap[location]
+	if !foundTZ {
+		replyWithMessage(s, i, "Invalid location. Please use one of valid options")
+		return
+	}
+
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		log.Printf("Error loading location %s: %v", timezone, err)
+	}
+
+	if timeStr == "" {
+		timeStr = time.Now().In(loc).Format(timeFormatOutput)
+	}
+
 	timeStr = strings.ToUpper(timeStr)
 
 	// Regex validations to add leading zeroes when necessary
@@ -100,57 +166,46 @@ func (cmd *TimeDifferenceCmd) Execute(s *discordgo.Session, i *discordgo.Interac
 		return
 	}
 
-	timezonesMap := map[string]string{
-		"New Jersey/Philadelphia": "America/New_York",
-		"Chile":                   "America/Santiago",
-	}
-
 	var results []string
-	for locationName, timezone := range timezonesMap {
-		loc, err := time.LoadLocation(timezone)
-		if err != nil {
-			log.Printf("Error loading location %s: %v", timezone, err)
+
+	now := time.Now()
+	timeInLocation := time.Date(
+		now.Year(),
+		now.Month(),
+		now.Day(),
+		parsedTime.Hour(),
+		parsedTime.Minute(),
+		0,
+		0,
+		loc,
+	)
+	results = append(results,
+		fmt.Sprintf(
+			"If %s is the time in %s, then:",
+			parsedTime.Format(timeFormatOutput),
+			location,
+		),
+	)
+
+	for targetName, targetTimezone := range timezonesMap {
+		if targetName == location {
 			continue
 		}
-
-		now := time.Now()
-		timeInLocation := time.Date(
-			now.Year(),
-			now.Month(),
-			now.Day(),
-			parsedTime.Hour(),
-			parsedTime.Minute(),
-			0,
-			0,
-			loc,
-		)
+		targetLoc, err := time.LoadLocation(targetTimezone)
+		if err != nil {
+			log.Printf("Error loading location %s: %v", targetTimezone, err)
+			continue
+		}
+		targetTime := timeInLocation.In(targetLoc)
 		results = append(results,
 			fmt.Sprintf(
-				"If %s is the time in %s, then:",
-				parsedTime.Format(timeFormatOutput),
-				locationName,
+				"- %s would be the time in %s",
+				targetTime.Format(timeFormatOutput),
+				targetName,
 			),
 		)
-
-		for targetName, targetTimezone := range timezonesMap {
-			if targetName == locationName {
-				continue
-			}
-			targetLoc, err := time.LoadLocation(targetTimezone)
-			if err != nil {
-				log.Printf("Error loading location %s: %v", targetTimezone, err)
-				continue
-			}
-			targetTime := timeInLocation.In(targetLoc)
-			results = append(results,
-				fmt.Sprintf(
-					"- %s would be the time in %s",
-					targetTime.Format(timeFormatOutput),
-					targetName,
-				),
-			)
-		}
-		results = append(results, "")
 	}
+	results = append(results, "")
+
 	replyWithMessage(s, i, strings.Join(results, "\n"))
 }
