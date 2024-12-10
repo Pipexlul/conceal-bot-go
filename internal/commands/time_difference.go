@@ -18,6 +18,7 @@ var (
 	timezonesMap = map[string]string{
 		"New Jersey/Philadelphia": "America/New_York",
 		"Chile":                   "America/Santiago",
+  "Zimbabwe": "Africa/Harare",
 	}
 )
 
