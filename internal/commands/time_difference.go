@@ -19,6 +19,7 @@ var (
 		"New Jersey/Philadelphia": "America/New_York",
 		"Chile":                   "America/Santiago",
   "Zimbabwe": "Africa/Harare",
+  "Madagascar": "Indian/Antananarivo", 
 	}
 )
 
