@@ -16,7 +16,7 @@ import (
 	"github.com/pipexlul/conceal-bot-go/internal/pkg/env"
 )
 
-const funnyStatus = "How we feeling?"
+const funnyStatus = "Epic Anya very voice!" 
 
 var mongoClient *mongo.Client
 
