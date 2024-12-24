@@ -55,7 +55,7 @@ func New(s *discordgo.Session, randGen *rand.Rand) *Helper {
 }
 
 func (dsh *Helper) SetupStatusTicker() {
-	ticker := time.Tick(time.Second * 30)
+	ticker := time.Tick(time.Hour * 2)
 	go func() {
 		for range ticker {
 			if err := dsh.UpdateStatusFromRandom(); err != nil {
