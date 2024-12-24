@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"math/rand"
 	"os"
 	"time"
 	_ "time/tzdata"
@@ -13,12 +14,15 @@ import (
 
 	"github.com/pipexlul/conceal-bot-go/internal/commands"
 	"github.com/pipexlul/conceal-bot-go/internal/mappers"
+	"github.com/pipexlul/conceal-bot-go/internal/pkg/discord-status"
 	"github.com/pipexlul/conceal-bot-go/internal/pkg/env"
 )
 
-const funnyStatus = "Epic Anya very voice!" 
-
-var mongoClient *mongo.Client
+var (
+	mongoClient         *mongo.Client
+	discordStatusHelper *discordstatus.Helper
+	randGen             *rand.Rand
+)
 
 func connectMongo() {
 	mongoURI := os.Getenv("MONGO_URI")
@@ -51,6 +55,11 @@ func disconnectMongo() {
 }
 
 func main() {
+	randGen = rand.New(rand.NewSource(time.Now().UnixNano()))
+	if randGen == nil {
+		log.Fatal("Failed to create random number generator")
+	}
+
 	botToken := env.GetBotToken()
 	if botToken.Token == "" {
 		log.Fatal("Missing all BOT TOKEN environment variables, at least one is required")
@@ -63,6 +72,7 @@ func main() {
 		log.Fatalf("Failed to create Discord session: %v", err)
 	}
 
+	discordStatusHelper = discordstatus.New(dg, randGen)
 	dg.AddHandler(onReady)
 
 	if err = dg.Open(); err != nil {
@@ -91,11 +101,13 @@ func main() {
 	log.Print("All commands registered!")
 
 	log.Println("Bot is now running. Press CTRL-C to exit.")
+
+	discordStatusHelper.SetupStatusTicker()
 	select {}
 }
 
-func onReady(s *discordgo.Session, event *discordgo.Ready) {
-	if err := s.UpdateGameStatus(0, funnyStatus); err != nil {
+func onReady(s *discordgo.Session, _ *discordgo.Ready) {
+	if err := discordStatusHelper.UpdateStatusFromRandom(); err != nil {
 		log.Printf("Error updating game status at ready: %v", err)
 	}
 	log.Printf("Ready! Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
