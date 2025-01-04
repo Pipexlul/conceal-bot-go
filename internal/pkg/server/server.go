@@ -42,6 +42,9 @@ func (a *APIServer) registerRoutes() {
 		title := r.URL.Query().Get("title")
 		hideThumbnail := r.URL.Query().Get("hide_thumbnail") == "true"
 
+		userAgent := r.Header.Get("User-Agent")
+		log.Printf("[DEBUG] User Agent: %s", userAgent)
+
 		if videoID == "" || title == "" {
 			http.Error(w, "Missing required parameters", http.StatusBadRequest)
 			return
