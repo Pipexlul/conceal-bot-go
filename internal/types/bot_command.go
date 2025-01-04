@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/bwmarrin/discordgo"
+
+	utils "github.com/pipexlul/conceal-bot-go/internal/utilities"
 )
 
-type BotCommandHandler func(dgSession *discordgo.Session, i *discordgo.InteractionCreate)
-
 type BotCommand interface {
-	Register(ctx context.Context, dgSession *discordgo.Session) error
+	Register(ctx context.Context, concealBot utils.ConcealBot) error
 	// Execute(ctx context.Context) error
 	GetCommandName() string
 	GetOptions() []*discordgo.ApplicationCommandOption
