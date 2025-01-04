@@ -43,7 +43,7 @@ func (a *APIServer) registerRoutes() {
 		title := r.URL.Query().Get("title")
 		hideThumbnail := r.URL.Query().Get("hide_thumbnail") == "true"
 
-		isDiscordAgent := strings.Contains(r.Header.Get("User-Agent"), "discord")
+		isDiscordAgent := strings.Contains(strings.ToLower(r.Header.Get("User-Agent")), "discordbot")
 
 		if videoID == "" || title == "" {
 			http.Error(w, "Missing required parameters", http.StatusBadRequest)
