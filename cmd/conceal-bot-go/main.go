@@ -25,15 +25,15 @@ var (
 )
 
 func connectMongo() {
-	mongoURI := os.Getenv("MONGO_URI")
-	if mongoURI == "" {
-		log.Fatal("Missing MONGO_URI environment variable")
+	mongoURL := os.Getenv("MONGO_URL")
+	if mongoURL == "" {
+		log.Fatal("Missing MONGO_URL environment variable")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURL))
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
@@ -51,10 +51,15 @@ func disconnectMongo() {
 		if err := mongoClient.Disconnect(context.Background()); err != nil {
 			log.Fatalf("Failed to disconnect from MongoDB: %v", err)
 		}
+
+		log.Println("Disconnected from MongoDB")
 	}
 }
 
 func main() {
+	connectMongo()
+	defer disconnectMongo()
+
 	randGen = rand.New(rand.NewSource(time.Now().UnixNano()))
 	if randGen == nil {
 		log.Fatal("Failed to create random number generator")
