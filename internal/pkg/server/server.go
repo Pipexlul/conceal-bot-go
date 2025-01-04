@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -42,8 +43,7 @@ func (a *APIServer) registerRoutes() {
 		title := r.URL.Query().Get("title")
 		hideThumbnail := r.URL.Query().Get("hide_thumbnail") == "true"
 
-		userAgent := r.Header.Get("User-Agent")
-		log.Printf("[DEBUG] User Agent: %s", userAgent)
+		isDiscordAgent := strings.Contains(strings.ToLower(r.Header.Get("User-Agent")), "discordbot")
 
 		if videoID == "" || title == "" {
 			http.Error(w, "Missing required parameters", http.StatusBadRequest)
@@ -80,6 +80,11 @@ func (a *APIServer) registerRoutes() {
 		}
 
 		existing.Thumbnail = thumbnailURL
+
+		if !isDiscordAgent {
+			http.Redirect(w, r, existing.Metadata.OGURL, http.StatusFound)
+			return
+		}
 
 		a.renderEmbedHTML(w, existing)
 	})
