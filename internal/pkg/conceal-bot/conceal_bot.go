@@ -33,8 +33,20 @@ func NewConcealBot(options ...ConcealBotOption) *ConcealBot {
 	return bot
 }
 
+func (bot *ConcealBot) Client() *discordgo.Session {
+	return bot.DiscordClient
+}
+
+func (bot *ConcealBot) GetMongoClient() *mongo.Client {
+	return bot.MongoClient
+}
+
 func (bot *ConcealBot) GetStatusHelper() *discordstatus.Helper {
 	return bot.StatusHelper
+}
+
+func (bot *ConcealBot) GetRandGen() *rand.Rand {
+	return bot.RandGen
 }
 
 func (bot *ConcealBot) ConnectMongo() {

@@ -12,19 +12,24 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+
+	"github.com/pipexlul/conceal-bot-go/internal/types"
+	utils "github.com/pipexlul/conceal-bot-go/internal/utilities"
 )
 
 var (
 	timezonesMap = map[string]string{
 		"New Jersey/Philadelphia": "America/New_York",
 		"Chile":                   "America/Santiago",
-  "Zimbabwe": "Africa/Harare",
-  "Madagascar": "Indian/Antananarivo", 
+		"Zimbabwe":                "Africa/Harare",
+		"Madagascar":              "Indian/Antananarivo",
 	}
 )
 
 type TimeDifferenceCmd struct {
 }
+
+var _ types.BotCommand = (*TimeDifferenceCmd)(nil)
 
 func (cmd *TimeDifferenceCmd) GetCommandName() string {
 	return "timediff"
@@ -72,13 +77,14 @@ func (cmd *TimeDifferenceCmd) GetOptions() []*discordgo.ApplicationCommandOption
 
 func (cmd *TimeDifferenceCmd) Register(
 	_ context.Context,
-	dgSession *discordgo.Session,
+	bot utils.ConcealBot,
 ) error {
 	// I estimate registering a command will not take over 6 seconds
 	// No need for context usage at the moment, so I'll leave this commented
 	// registerCtx, cancel := context.WithDeadline(ctx, time.Now().Add(6*time.Second))
 	// defer cancel()
 
+	dgSession := bot.Client()
 	// TODO: Maybe add the result to a map of sorts to unregister when needed?
 	_, err := dgSession.ApplicationCommandCreate(dgSession.State.User.ID, "", &discordgo.ApplicationCommand{
 		ID:          cmd.GetCommandName(),
@@ -125,7 +131,7 @@ func (cmd *TimeDifferenceCmd) Execute(s *discordgo.Session, i *discordgo.Interac
 	location, timeStr := cmd.GetUserParams(i.ApplicationCommandData().Options)
 	timezone, foundTZ := timezonesMap[location]
 	if !foundTZ {
-		replyWithMessage(s, i, "Invalid location. Please use one of valid options")
+		ReplyWithMessage(s, i, "Invalid location. Please use one of valid options")
 		return
 	}
 
@@ -160,7 +166,7 @@ func (cmd *TimeDifferenceCmd) Execute(s *discordgo.Session, i *discordgo.Interac
 	}
 
 	if parsedTimeErr != nil {
-		replyWithMessage(
+		ReplyWithMessage(
 			s,
 			i,
 			"Invalid time format. Please use one of the following formats: HH:MM (24-hour), HH:MM AM (HH:MM am), or HH:MM PM (HH:MM pm).",
@@ -209,5 +215,5 @@ func (cmd *TimeDifferenceCmd) Execute(s *discordgo.Session, i *discordgo.Interac
 	}
 	results = append(results, "")
 
-	replyWithMessage(s, i, strings.Join(results, "\n"))
+	ReplyWithMessage(s, i, strings.Join(results, "\n"))
 }

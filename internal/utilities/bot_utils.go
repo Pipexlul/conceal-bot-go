@@ -2,6 +2,8 @@ package utilities
 
 import (
 	"github.com/bwmarrin/discordgo"
+	"go.mongodb.org/mongo-driver/mongo"
+	"math/rand"
 
 	"github.com/pipexlul/conceal-bot-go/internal/models"
 	discordstatus "github.com/pipexlul/conceal-bot-go/internal/pkg/discord-status"
@@ -13,7 +15,11 @@ type ConcealBot interface {
 	RegisterHandler(handler ConcealBotHandler, handlerType models.BotEventType) func()
 	InjectBotForHandler(handler ConcealBotHandler, handlerType models.BotEventType) interface{}
 
+	Client() *discordgo.Session
+
+	GetMongoClient() *mongo.Client
 	GetStatusHelper() *discordstatus.Helper
+	GetRandGen() *rand.Rand
 }
 
 type ConcealBotHandler func(ConcealBot, *discordgo.Session, interface{})

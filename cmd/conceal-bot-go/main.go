@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"github.com/pipexlul/conceal-bot-go/internal/pkg/server"
+	"github.com/pipexlul/conceal-bot-go/internal/types"
 	"log"
 	"math/rand"
 	"time"
@@ -61,8 +63,18 @@ func main() {
 	defer cancelFunc()
 
 	// TODO: Use a more centralized command registerer
-	cmd := &commands.TimeDifferenceCmd{}
-	registerCmdErr := cmd.Register(registererCtx, concealBot.DiscordClient)
+	var (
+		cmd            types.BotCommand
+		registerCmdErr error
+	)
+	cmd = &commands.TimeDifferenceCmd{}
+	registerCmdErr = cmd.Register(registererCtx, concealBot)
+	if registerCmdErr != nil {
+		log.Fatalf("Failed to register command: %v", cmd.GetCommandName())
+	}
+
+	cmd = &commands.SpoillessVideoCmd{}
+	registerCmdErr = cmd.Register(registererCtx, concealBot)
 	if registerCmdErr != nil {
 		log.Fatalf("Failed to register command: %v", cmd.GetCommandName())
 	}
@@ -74,6 +86,9 @@ func main() {
 	log.Println("Bot is now running. Press CTRL-C to exit.")
 
 	concealBot.StatusHelper.SetupStatusTicker()
+
+	apiServer := &server.APIServer{}
+	apiServer.Start(concealBot)
 	select {}
 }
 
