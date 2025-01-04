@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/pipexlul/conceal-bot-go/internal/pkg/server"
-	"github.com/pipexlul/conceal-bot-go/internal/types"
 	"log"
 	"math/rand"
 	"time"
@@ -17,6 +15,8 @@ import (
 	concealbot "github.com/pipexlul/conceal-bot-go/internal/pkg/conceal-bot"
 	"github.com/pipexlul/conceal-bot-go/internal/pkg/discord-status"
 	"github.com/pipexlul/conceal-bot-go/internal/pkg/env"
+	"github.com/pipexlul/conceal-bot-go/internal/pkg/server"
+	"github.com/pipexlul/conceal-bot-go/internal/types"
 	utils "github.com/pipexlul/conceal-bot-go/internal/utilities"
 )
 

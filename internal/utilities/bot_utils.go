@@ -1,9 +1,10 @@
 package utilities
 
 import (
+	"math/rand"
+
 	"github.com/bwmarrin/discordgo"
 	"go.mongodb.org/mongo-driver/mongo"
-	"math/rand"
 
 	"github.com/pipexlul/conceal-bot-go/internal/models"
 	discordstatus "github.com/pipexlul/conceal-bot-go/internal/pkg/discord-status"

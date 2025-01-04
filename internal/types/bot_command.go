@@ -2,9 +2,10 @@ package types
 
 import (
 	"context"
-	utils "github.com/pipexlul/conceal-bot-go/internal/utilities"
 
 	"github.com/bwmarrin/discordgo"
+
+	utils "github.com/pipexlul/conceal-bot-go/internal/utilities"
 )
 
 type BotCommand interface {
