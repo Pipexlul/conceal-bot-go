@@ -25,7 +25,7 @@ var statuses = []string{
 	"Hide in the bunker",
 	"40% on cats lmao",
 	"Current cat count: 11",
-	"Current GFuel count: 42",
+	"Current GFuel count: 64",
 	"Me hear keyboard me clacky!!",
 	"lol, lmao even",
 	"Hes him",
@@ -40,6 +40,15 @@ var statuses = []string{
 	"Silco will never be real",
 	"We simp Jinx",
 	"Miquella, lord of projections",
+	"The Ult Economy",
+	"AGAAAAAAIN",
+	"Jace is addicted to warframe",
+	"2 quid",
+	"shrimp game",
+	"meow",
+	"mellow foot chunk",
+	"mellow foot chunk pt.2",
+	":(",
 }
 
 type Helper struct {
